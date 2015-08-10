@@ -36,15 +36,18 @@ func (a *AppClient) Close() {
 	}
 }
 
-func (a *AppClient) Call(methodName string, in toolkit.M) *toolkit.Result {
+func (a *AppClient) Call(methodName string, in toolkit.M, result interface{}) error {
 	out := new(toolkit.Result)
-	out.Status = toolkit.Status_OK
-	start := time.Now()
 	e := a.client.Call("Rpc."+methodName, in, out)
-	out.Duration = time.Since(start)
+	_ = "breakpoint"
 	if e != nil {
-		out.Status = toolkit.Status_NOK
-		out.Message = e.Error()
+		return errorlib.Error(packageName, objAppClient, "Call", e.Error())
+	} else if out.Status == toolkit.Status_NOK {
+		return errorlib.Error(packageName, objAppClient, "Call", out.Message)
+	} else {
+		if result != nil {
+			result = toolkit.DecodeByte(out.Data.([]byte), result)
+		}
 	}
-	return out
+	return nil
 }
