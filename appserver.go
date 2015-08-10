@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/eaciit/config"
 	"github.com/eaciit/errorlib"
+	"github.com/eaciit/toolkit"
 	"net"
 	"net/rpc"
 )
@@ -28,14 +29,15 @@ type AppServer struct {
 	ServerAddress string
 	Role          string
 
-	RfcObject interface{}
+	RpcObject interface{}
 
+	Log      *toolkit.LogEngine
 	listener net.Listener
 }
 
 func (a *AppServer) Start() error {
-	if a.RfcObject == nil {
-		return errorlib.Error(packageName, objAppServer, "Start", "RFC Object is not yet properly initialized")
+	if a.RpcObject == nil {
+		return errorlib.Error(packageName, objAppServer, "Start", "RPC Object is not yet properly initialized")
 	}
 	a.ReadConfig()
 
@@ -43,8 +45,8 @@ func (a *AppServer) Start() error {
 		a.ServerAddress = fmt.Sprintf("%s:%d", a.ServerName, a.Port)
 	}
 
-	rpc.Register(a.RfcObject)
-	l, e := net.Listen("tcp", fmt.Sprintf("%s:%d", a.ServerAddress))
+	rpc.Register(a.RpcObject)
+	l, e := net.Listen("tcp", fmt.Sprintf("%s", a.ServerAddress))
 	if e != nil {
 		return e
 	}
@@ -54,19 +56,24 @@ func (a *AppServer) Start() error {
 }
 
 func (a *AppServer) Serve() error {
-	for {
-		conn, e := a.listener.Accept()
-		if e != nil {
-			return e
+	/*
+		for {
+			conn, e := a.listener.Accept()
+			if e != nil {
+				return e
+			}
+			go func(c net.Conn) {
+				defer c.Close()
+				rpc.ServeConn(c)
+			}(conn)
 		}
-		go func(c net.Conn) {
-			defer c.Close()
-			rpc.ServeConn(c)
-		}(conn)
-	}
+	*/
+	rpc.Accept(a.listener)
+	return nil
 }
 
 func (a *AppServer) Stop() error {
+	a.Log.Info("Stopping service")
 	return nil
 }
 
