@@ -57,6 +57,17 @@ func (a *AppServer) Start(reloadConfig bool) error {
 	return nil
 }
 
+func (a *AppServer) AddFn(methodname string, f RpcFn) {
+	var r *Rpc
+	if a.RpcObject == nil {
+		r = new(Rpc)
+	} else {
+		r = a.RpcObject.(*Rpc)
+	}
+	r.AddFn(methodname, f)
+	a.RpcObject = r
+}
+
 func (a *AppServer) Serve() error {
 	/*
 		for {
