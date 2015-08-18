@@ -101,7 +101,7 @@ func (a *AppServer) ReadConfig() error {
 		}
 
 		a.ServerName = config.GetDefault("host", "localhost").(string)
-		a.Port = config.GetDefault("host", 7890).(int)
+		a.Port = config.GetDefault("port", 7890).(int)
 	}
 	return nil
 }
