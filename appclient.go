@@ -38,15 +38,18 @@ func (a *AppClient) Close() {
 
 func (a *AppClient) Call(methodName string, in toolkit.M, result interface{}) error {
 	out := new(toolkit.Result)
-	e := a.client.Call("Rpc."+methodName, in, out)
-	_ = "breakpoint"
+	in["method"]=methodName
+	e := a.client.Call("Rpc.Do", in, out)
+	//_ = "breakpoint"
 	if e != nil {
 		return errorlib.Error(packageName, objAppClient, "Call", e.Error())
 	} else if out.Status == toolkit.Status_NOK {
 		return errorlib.Error(packageName, objAppClient, "Call", out.Message)
 	} else {
 		if result != nil {
-			result = toolkit.DecodeByte(out.Data.([]byte), result)
+			if out.Data!=nil {
+				result = toolkit.DecodeByte(out.Data.([]byte), result)
+			}
 		}
 	}
 	return nil

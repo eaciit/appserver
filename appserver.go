@@ -35,11 +35,13 @@ type AppServer struct {
 	listener net.Listener
 }
 
-func (a *AppServer) Start() error {
+func (a *AppServer) Start(reloadConfig bool) error {
 	if a.RpcObject == nil {
 		return errorlib.Error(packageName, objAppServer, "Start", "RPC Object is not yet properly initialized")
 	}
-	a.ReadConfig()
+	if reloadConfig {
+		a.ReadConfig()
+	}
 
 	if a.ServerAddress == "" {
 		a.ServerAddress = fmt.Sprintf("%s:%d", a.ServerName, a.Port)
