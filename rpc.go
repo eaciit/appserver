@@ -14,17 +14,10 @@ type Rpc struct {
 }
 
 func (r *Rpc) Do(in toolkit.M, result *toolkit.Result) error {
-	/*
-		times := make([]time.Time, 0)
-		for i := 0; i < 1000; i++ {
-			times = append(times, time.Now().UTC())
-		}
-		result.Data = toolkit.GetEncodeByte(times)
-		return nil
-	*/
 	if r.Fns == nil {
 		r.Fns = map[string]RpcFn{}
 	}
+
 	if in.Has("method") {
 		in.Set("rpc", r)
 		fn := r.Fns[in.Get("method", "").(string)]
@@ -33,14 +26,13 @@ func (r *Rpc) Do(in toolkit.M, result *toolkit.Result) error {
 	return nil
 }
 
-func (r *Rpc) AddFn(svr *AppServer, k string, fn RpcFn) {
+func AddFntoRpc(r *Rpc, svr *AppServer, k string, fn RpcFn) {
 	//func (r *Rpc) AddFn(k string, fn RpcFn) {
-	if r.Server != nil {
+	if r.Server == nil {
 		r.Server = svr
 	}
 	if r.Fns == nil {
 		r.Fns = map[string]RpcFn{}
 	}
-
 	r.Fns[k] = fn
 }
