@@ -64,7 +64,8 @@ func (a *AppServer) AddFn(methodname string, f RpcFn) {
 	} else {
 		r = a.RpcObject.(*Rpc)
 	}
-	r.AddFn(methodname, f)
+	r.AddFn(a, methodname, f)
+	//r.AddFn(methodname, f)
 	a.RpcObject = r
 }
 
