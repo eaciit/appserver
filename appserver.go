@@ -29,14 +29,24 @@ type AppServer struct {
 	ServerAddress string
 	Role          string
 
-	RpcObject interface{}
+	rpcObject interface{}
 
 	Log      *toolkit.LogEngine
 	listener net.Listener
+
+	container interface{}
+}
+
+func (a *AppServer) SetContainer(o interface{}) {
+	a.container = o
+}
+
+func (a *AppServer) Container() interface{} {
+	return a.container
 }
 
 func (a *AppServer) Start(reloadConfig bool) error {
-	if a.RpcObject == nil {
+	if a.rpcObject == nil {
 		return errorlib.Error(packageName, objAppServer, "Start", "RPC Object is not yet properly initialized")
 	}
 	if reloadConfig {
@@ -47,7 +57,7 @@ func (a *AppServer) Start(reloadConfig bool) error {
 		a.ServerAddress = fmt.Sprintf("%s:%d", a.ServerName, a.Port)
 	}
 
-	rpc.Register(a.RpcObject)
+	rpc.Register(a.rpcObject)
 	l, e := net.Listen("tcp", fmt.Sprintf("%s", a.ServerAddress))
 	if e != nil {
 		return e
@@ -59,16 +69,16 @@ func (a *AppServer) Start(reloadConfig bool) error {
 
 func (a *AppServer) AddFn(methodname string, fn RpcFn) {
 	var r *Rpc
-	if a.RpcObject == nil {
+	if a.rpcObject == nil {
 		r = new(Rpc)
 	} else {
-		r = a.RpcObject.(*Rpc)
+		r = a.rpcObject.(*Rpc)
 	}
 
 	AddFntoRpc(r, a, methodname, fn)
 	//r.AddFn(a, methodname, f)
 	//r.AddFn(methodname, f)
-	a.RpcObject = r
+	a.rpcObject = r
 }
 
 func (a *AppServer) Serve() error {
