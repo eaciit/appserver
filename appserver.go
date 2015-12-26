@@ -1,12 +1,14 @@
 package appserver
 
 import (
+	"errors"
 	"fmt"
 	"github.com/eaciit/config"
 	"github.com/eaciit/errorlib"
 	"github.com/eaciit/toolkit"
 	"net"
 	"net/rpc"
+	"reflect"
 )
 
 const (
@@ -79,6 +81,27 @@ func (a *AppServer) AddFn(methodname string, fn RpcFn) {
 	//r.AddFn(a, methodname, f)
 	//r.AddFn(methodname, f)
 	a.rpcObject = r
+}
+
+func (a *AppServer) Register(o interface{}) error {
+	t := reflect.TypeOf(o)
+	v := reflect.ValueOf(o)
+	if v.Kind() != reflect.Ptr {
+		return errors.New("Invalid object for RPC Register")
+	}
+	methodCount := t.NumMethod()
+	for i := 0; i < methodCount; i++ {
+		method := t.Method(i)
+		mtype := method.Type
+
+		//-- now check method signature
+		if mtype.NumIn() == 2 && mtype.In(1).String() == "toolkit.M" {
+			if mtype.NumOut() == 1 && mtype.Out(0).String() == "*toolkit.Result" {
+				a.AddFn(method.Name, nil)
+			}
+		}
+	}
+	return nil
 }
 
 func (a *AppServer) Serve() error {
