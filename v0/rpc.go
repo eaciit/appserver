@@ -3,6 +3,7 @@ package appserver
 import (
 	"github.com/eaciit/toolkit"
 	//"time"
+	"errors"
 )
 
 type RpcFn func(toolkit.M, *toolkit.Result) error
@@ -13,17 +14,17 @@ type Rpc struct {
 	Server *AppServer
 }
 
-func (r *Rpc) Do(in toolkit.M, result *toolkit.Result) error {
+func (r *Rpc) Do(method string, in toolkit.M, result *toolkit.Result) error {
 	if r.Fns == nil {
 		r.Fns = map[string]RpcFn{}
 	}
 
-	if in.Has("method") {
-		in.Set("rpc", r)
-		fn := r.Fns[in.Get("method", "").(string)]
-		return fn(in, result)
+	in.Set("rpc", r)
+	fn, fnExist := r.Fns[method]
+	if !fnExist {
+		return errors.New("Method " + method + " is not exist")
 	}
-	return nil
+	return fn(in, result)
 }
 
 func AddFntoRpc(r *Rpc, svr *AppServer, k string, fn RpcFn) {
