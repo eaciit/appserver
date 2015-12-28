@@ -34,7 +34,7 @@ func SetMarshallingMethod(m string) {
 	_marshallingMethod = m
 }
 
-func (r *Rpc) Do(in toolkit.M, out *[]byte) error {
+func (r *Rpc) Do(in toolkit.M, out *toolkit.Result) error {
 	if r.Fns == nil {
 		r.Fns = map[string]RpcFn{}
 	}
@@ -50,9 +50,10 @@ func (r *Rpc) Do(in toolkit.M, out *[]byte) error {
 	}
 	res := fn(in)
 	if res.Status != toolkit.Status_OK {
-		return errors.New(res.Message)
+		return errors.New("RPC Call error: " + res.Message)
 	}
-	*out = toolkit.ToBytes(res.Data, MarshallingMethod())
+	//*out = toolkit.ToBytes(res.Data, MarshallingMethod())
+	*out = *res
 	return nil
 }
 

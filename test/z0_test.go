@@ -52,6 +52,9 @@ func TestClient(t *testing.T) {
 	if result.Status != toolkit.Status_OK {
 		t.Error(result.Message)
 		return
+
+	} else {
+		t.Log("Result: ", result.Data)
 	}
 }
 

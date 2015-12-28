@@ -104,6 +104,14 @@ func (a *Server) Start(address string) error {
 	if e != nil {
 		return e
 	}
+
+	//init a ping method. Ping method will return "EACIIT RPC Application Server"
+	a.AddFn("ping", func(toolkit.M) *toolkit.Result {
+		result := toolkit.NewResult()
+		result.Data = "EACIIT RPC Application Server"
+		return result
+	})
+
 	a.listener = l
 	go func() {
 		rpc.Accept(l)
