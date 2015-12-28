@@ -27,14 +27,35 @@ func checkTestSkip(t *testing.T) {
 }
 
 func TestStart(t *testing.T) {
-	defer func() {
-		serverInit = true
-	}()
 	server = new(appserver.Server)
 	server.Register(new(controller))
-	server.Start("localhost:8800")
+	e := server.Start("localhost:8000")
+	if e == nil {
+		serverInit = true
+	}
+}
+
+func TestClient(t *testing.T) {
+	checkTestSkip(t)
+	client := new(appserver.Client)
+	e := client.Connect(server.Address)
+	if e != nil {
+		t.Error(e.Error())
+		return
+	}
+	defer func() {
+		client.Close()
+	}()
+
+	var result *toolkit.Result
+	result = client.Call("ping", toolkit.M{})
+	if result.Status != toolkit.Status_OK {
+		t.Error(result.Message)
+		return
+	}
 }
 
 func TestStop(t *testing.T) {
 	checkTestSkip(t)
+	server.Stop()
 }

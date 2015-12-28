@@ -24,12 +24,12 @@ type IServer interface {
 }
 
 type Server struct {
-	ServerId      string
-	ConfigFile    string
-	ServerName    string
-	Port          int
-	ServerAddress string
-	Role          string
+	ServerId   string
+	ConfigFile string
+	ServerName string
+	Port       int
+	Address    string
+	Role       string
 
 	rpcObject interface{}
 
@@ -47,6 +47,7 @@ func (a *Server) Container() interface{} {
 	return a.container
 }
 
+/*
 func (a *Server) Start(reloadConfig bool) error {
 	if a.rpcObject == nil {
 		return errorlib.Error(packageName, objServer, "Start", "RPC Object is not yet properly initialized")
@@ -55,17 +56,58 @@ func (a *Server) Start(reloadConfig bool) error {
 		a.ReadConfig()
 	}
 
-	if a.ServerAddress == "" {
-		a.ServerAddress = fmt.Sprintf("%s:%d", a.ServerName, a.Port)
+	if a.Address == "" {
+		a.Address = fmt.Sprintf("%s:%d", a.ServerName, a.Port)
 	}
 
 	rpc.Register(a.rpcObject)
-	l, e := net.Listen("tcp", fmt.Sprintf("%s", a.ServerAddress))
+	l, e := net.Listen("tcp", fmt.Sprintf("%s", a.Address))
 	if e != nil {
 		return e
 	}
 
 	a.listener = l
+	return nil
+}
+*/
+func (a *Server) Start(address string) error {
+	if a.rpcObject == nil {
+		return errorlib.Error(packageName, objServer, "Start", "RPC Object is not yet properly initialized")
+	}
+	/*
+		if reloadConfig {
+			a.ReadConfig()
+		}
+	*/
+
+	if a.Address == "" {
+		if address != "" {
+			a.Address = address
+		} else {
+			a.Address = fmt.Sprintf("%s:%d", a.ServerName, a.Port)
+		}
+		if a.Address == "" {
+			return errors.New("RPC Server address is empty")
+		}
+	}
+
+	if a.Log == nil {
+		le, e := toolkit.NewLog(true, false, "", "", "")
+		if e == nil {
+			a.Log = le
+		} else {
+			return errors.New("Unable to setup log")
+		}
+	}
+	rpc.Register(a.rpcObject)
+	l, e := net.Listen("tcp", fmt.Sprintf("%s", a.Address))
+	if e != nil {
+		return e
+	}
+	a.listener = l
+	go func() {
+		rpc.Accept(l)
+	}()
 	return nil
 }
 
@@ -122,6 +164,7 @@ func (a *Server) Serve() error {
 }
 
 func (a *Server) Stop() error {
+	a.listener.Close()
 	a.Log.Info("Stopping service")
 	return nil
 }
