@@ -11,6 +11,19 @@ const (
 	objClient = "Client"
 )
 
+var _timeOut time.Duration
+
+func SetDialTimeout(t time.Duration) {
+	_timeOut = t
+}
+
+func DialTimeout() time.Duration {
+	if _timeOut == 0 {
+		_timeOut = 90 * time.Second
+	}
+	return _timeOut
+}
+
 type Client struct {
 	UserId    string
 	FullName  string

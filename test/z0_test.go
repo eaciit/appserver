@@ -43,9 +43,6 @@ func TestClient(t *testing.T) {
 		t.Error(e.Error())
 		return
 	}
-	defer func() {
-		client.Close()
-	}()
 
 	var result *toolkit.Result
 	result = client.Call("ping", toolkit.M{})
@@ -54,11 +51,18 @@ func TestClient(t *testing.T) {
 		return
 
 	} else {
-		t.Log("Result: ", result.Data)
+		t.Logf("Result: %v", result.Data)
 	}
+}
+
+func TestClientHi(t *testing.T) {
+	checkTestSkip(t)
 }
 
 func TestStop(t *testing.T) {
 	checkTestSkip(t)
 	server.Stop()
+	if client != nil {
+		client.Close()
+	}
 }

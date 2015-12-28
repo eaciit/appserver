@@ -147,29 +147,19 @@ func (a *Server) Register(o interface{}) error {
 		//-- now check method signature
 		if mtype.NumIn() == 2 && mtype.In(1).String() == "toolkit.M" {
 			if mtype.NumOut() == 1 && mtype.Out(0).String() == "*toolkit.Result" {
-				a.AddFn(method.Name, nil)
+				a.AddFn(method.Name, v.Method(i).Interface().(RpcFn))
 			}
 		}
 	}
 	return nil
 }
 
+/*
 func (a *Server) Serve() error {
-	/*
-		for {
-			conn, e := a.listener.Accept()
-			if e != nil {
-				return e
-			}
-			go func(c net.Conn) {
-				defer c.Close()
-				rpc.ServeConn(c)
-			}(conn)
-		}
-	*/
 	rpc.Accept(a.listener)
 	return nil
 }
+*/
 
 func (a *Server) Stop() error {
 	a.listener.Close()
