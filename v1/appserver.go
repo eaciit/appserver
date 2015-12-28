@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/rpc"
 	"reflect"
+	"strings"
 )
 
 const (
@@ -143,11 +144,12 @@ func (a *Server) Register(o interface{}) error {
 	for i := 0; i < methodCount; i++ {
 		method := t.Method(i)
 		mtype := method.Type
+		methodName := strings.ToLower(method.Name)
 
 		//-- now check method signature
 		if mtype.NumIn() == 2 && mtype.In(1).String() == "toolkit.M" {
 			if mtype.NumOut() == 1 && mtype.Out(0).String() == "*toolkit.Result" {
-				a.AddFn(method.Name, v.Method(i).Interface().(RpcFn))
+				a.AddFn(methodName, v.Method(i).Interface().(func(toolkit.M) *toolkit.Result))
 			}
 		}
 	}
