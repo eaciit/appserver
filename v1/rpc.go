@@ -11,7 +11,7 @@ type RpcFns map[string]RpcFn
 
 type Rpc struct {
 	Fns    RpcFns
-	Server *AppServer
+	Server *Server
 }
 
 func (r *Rpc) Do(method string, in toolkit.M, result *toolkit.Result) error {
@@ -27,7 +27,7 @@ func (r *Rpc) Do(method string, in toolkit.M, result *toolkit.Result) error {
 	return fn(in, result)
 }
 
-func AddFntoRpc(r *Rpc, svr *AppServer, k string, fn RpcFn) {
+func AddFntoRpc(r *Rpc, svr *Server, k string, fn RpcFn) {
 	//func (r *Rpc) AddFn(k string, fn RpcFn) {
 	if r.Server == nil {
 		r.Server = svr

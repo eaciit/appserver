@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	packageName  = "eaciit"
-	objAppServer = "AppServer"
+	packageName = "eaciit"
+	objServer   = "Server"
 )
 
 type IServer interface {
@@ -23,7 +23,7 @@ type IServer interface {
 	ReadConfig() error
 }
 
-type AppServer struct {
+type Server struct {
 	ServerId      string
 	ConfigFile    string
 	ServerName    string
@@ -39,17 +39,17 @@ type AppServer struct {
 	container interface{}
 }
 
-func (a *AppServer) SetContainer(o interface{}) {
+func (a *Server) SetContainer(o interface{}) {
 	a.container = o
 }
 
-func (a *AppServer) Container() interface{} {
+func (a *Server) Container() interface{} {
 	return a.container
 }
 
-func (a *AppServer) Start(reloadConfig bool) error {
+func (a *Server) Start(reloadConfig bool) error {
 	if a.rpcObject == nil {
-		return errorlib.Error(packageName, objAppServer, "Start", "RPC Object is not yet properly initialized")
+		return errorlib.Error(packageName, objServer, "Start", "RPC Object is not yet properly initialized")
 	}
 	if reloadConfig {
 		a.ReadConfig()
@@ -69,7 +69,7 @@ func (a *AppServer) Start(reloadConfig bool) error {
 	return nil
 }
 
-func (a *AppServer) AddFn(methodname string, fn RpcFn) {
+func (a *Server) AddFn(methodname string, fn RpcFn) {
 	var r *Rpc
 	if a.rpcObject == nil {
 		r = new(Rpc)
@@ -83,7 +83,7 @@ func (a *AppServer) AddFn(methodname string, fn RpcFn) {
 	a.rpcObject = r
 }
 
-func (a *AppServer) Register(o interface{}) error {
+func (a *Server) Register(o interface{}) error {
 	t := reflect.TypeOf(o)
 	v := reflect.ValueOf(o)
 	if v.Kind() != reflect.Ptr {
@@ -104,7 +104,7 @@ func (a *AppServer) Register(o interface{}) error {
 	return nil
 }
 
-func (a *AppServer) Serve() error {
+func (a *Server) Serve() error {
 	/*
 		for {
 			conn, e := a.listener.Accept()
@@ -121,12 +121,12 @@ func (a *AppServer) Serve() error {
 	return nil
 }
 
-func (a *AppServer) Stop() error {
+func (a *Server) Stop() error {
 	a.Log.Info("Stopping service")
 	return nil
 }
 
-func (a *AppServer) ReadConfig() error {
+func (a *Server) ReadConfig() error {
 	if a.ConfigFile == "" {
 		a.ServerName = "localhost"
 		a.Port = 7890
