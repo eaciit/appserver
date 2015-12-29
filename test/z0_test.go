@@ -24,12 +24,12 @@ type Score struct {
 
 func (a *controller) Hi(in toolkit.M) *toolkit.Result {
 	r := toolkit.NewResult()
-	name := in.GetString("Name")
+	name := in.GetString("name")
 	r.SetBytes(struct {
 		HelloMessage string
 		TimeNow      time.Time
 		Scores       []Score
-	}{"Hello " + name, time.Now(), []Score{{"Bahasa Indonesia", 90}, {"Math", 85}}}, "gob")
+	}{"Hello " + name, time.Now(), []Score{{"Bahasa Indonesia", 90}, {"Math", 85}}}, "")
 	return r
 }
 
@@ -42,7 +42,8 @@ func checkTestSkip(t *testing.T) {
 func TestStart(t *testing.T) {
 	server = new(appserver.Server)
 	server.Register(new(controller))
-	server.SetSecret(serverSecret)
+	//server.SetSecret(serverSecret)
+	server.AddUser(&appserver.User{"ariefdarmawan", serverSecret})
 	e := server.Start("localhost:8000")
 	if e == nil {
 		serverInit = true
@@ -59,8 +60,8 @@ func checkResult(result *toolkit.Result, t *testing.T) {
 
 			m := struct {
 				HelloMessage string
-				TimeNow      time.Time
-				Scores       []Score
+				//TimeNow      time.Time
+				Scores []Score
 			}{}
 
 			//m := toolkit.M{}
@@ -77,7 +78,8 @@ func checkResult(result *toolkit.Result, t *testing.T) {
 func TestClient(t *testing.T) {
 	checkTestSkip(t)
 	client = new(appserver.Client)
-	e := client.Connect(server.Address, serverSecret, "ariefdarmawan_10")
+	e := client.Connect(server.Address, serverSecret, "ariefdarmawan")
+	//e := client.Connect(server.Address, serverSecret+"_10", "ariefdarmawan")
 	if e != nil {
 		t.Error(e.Error())
 		return
@@ -88,16 +90,29 @@ func TestClient(t *testing.T) {
 	checkResult(result, t)
 }
 
+func TestClientDouble(t *testing.T) {
+	checkTestSkip(t)
+	client2 := new(appserver.Client)
+	e := client2.Connect(server.Address, serverSecret, "ariefdarmawan")
+	if e == nil {
+		client2.Close()
+		t.Error("Should not be able to connect multi")
+		return
+	}
+	t.Log(e.Error())
+}
+
 func TestClientHi(t *testing.T) {
 	checkTestSkip(t)
-	r := client.Call("hi", toolkit.M{})
+	r := client.Call("hi", toolkit.M{}.Set("name", "Arief Darmawan"))
 	checkResult(r, t)
 }
 
 func TestStop(t *testing.T) {
 	checkTestSkip(t)
-	server.Stop()
+	//server.Stop()
 	if client != nil {
 		client.Close()
 	}
+	server.Stop()
 }

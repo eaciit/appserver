@@ -3,7 +3,7 @@ package appserver
 import (
 	"errors"
 	"fmt"
-	"github.com/eaciit/config"
+	//"github.com/eaciit/config"
 	"github.com/eaciit/errorlib"
 	"github.com/eaciit/toolkit"
 	"net"
@@ -27,10 +27,12 @@ type IServer interface {
 type Server struct {
 	ServerId   string
 	ConfigFile string
-	ServerName string
-	Port       int
-	Address    string
-	Role       string
+	//ServerName string
+	//Port       int
+
+	Address           string
+	Role              string
+	UseGlobalPassword bool
 
 	rpcObject interface{}
 
@@ -38,6 +40,7 @@ type Server struct {
 	listener net.Listener
 
 	container interface{}
+	users     map[string]*User
 	sessions  map[string]*Session
 	secret    string
 }
@@ -65,7 +68,14 @@ func (a *Server) validateSecret(secretType string, referenceID string, secret st
 	secretType = strings.ToLower(secretType)
 	referenceID = strings.ToLower(referenceID)
 	if secretType == "" {
-		return secret == a.Secret()
+		user, userExist := a.users[referenceID]
+		if userExist == false {
+			return false
+		} else if a.UseGlobalPassword == true {
+			return secret == a.Secret()
+		} else {
+			return secret == user.Secret
+		}
 	} else if secretType == "session" {
 		session, exist := a.sessions[referenceID]
 		if !exist {
@@ -89,9 +99,11 @@ func (a *Server) Start(address string) error {
 	if a.Address == "" {
 		if address != "" {
 			a.Address = address
-		} else {
+		}
+		/*else {
 			a.Address = fmt.Sprintf("%s:%d", a.ServerName, a.Port)
 		}
+		*/
 		if a.Address == "" {
 			return errors.New("RPC Server address is empty")
 		}
@@ -127,7 +139,7 @@ func (a *Server) Start(address string) error {
 		}
 		session, exist := a.sessions[referenceID]
 		if exist && session.IsValid() {
-			return result.SetErrorTxt("User " + referenceID + " already has session registered")
+			return result.SetErrorTxt(referenceID + " already has active session on other connection")
 		}
 		session = NewSession(referenceID)
 		a.sessions[referenceID] = session
@@ -143,12 +155,20 @@ func (a *Server) Start(address string) error {
 		return result
 	}, true, "session")
 
+	//a.users = map[string]*User
 	a.sessions = map[string]*Session{}
 	a.listener = l
 	go func() {
 		rpc.Accept(l)
 	}()
 	return nil
+}
+
+func (a *Server) AddUser(user *User) {
+	if a.users == nil {
+		a.users = map[string]*User{}
+	}
+	a.users[user.UserID] = user
 }
 
 func (a *Server) AddFn(methodname string, fn RpcFn, needAuth bool, authType string) {
@@ -195,21 +215,5 @@ func (a *Server) Serve() error {
 func (a *Server) Stop() error {
 	a.listener.Close()
 	a.Log.Info("Stopping service")
-	return nil
-}
-
-func (a *Server) ReadConfig() error {
-	if a.ConfigFile == "" {
-		a.ServerName = "localhost"
-		a.Port = 7890
-	} else {
-		e := config.SetConfigFile(a.ConfigFile)
-		if e != nil {
-			return e
-		}
-
-		a.ServerName = config.GetDefault("host", "localhost").(string)
-		a.Port = config.GetDefault("port", 7890).(int)
-	}
 	return nil
 }
