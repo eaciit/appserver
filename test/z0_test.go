@@ -10,6 +10,9 @@ import (
 var server *appserver.Server
 var client *appserver.Client
 var serverInit bool
+var (
+	serverSecret string = "ariefdarmawan"
+)
 
 type controller struct {
 }
@@ -39,6 +42,7 @@ func checkTestSkip(t *testing.T) {
 func TestStart(t *testing.T) {
 	server = new(appserver.Server)
 	server.Register(new(controller))
+	server.SetSecret(serverSecret)
 	e := server.Start("localhost:8000")
 	if e == nil {
 		serverInit = true
@@ -73,7 +77,7 @@ func checkResult(result *toolkit.Result, t *testing.T) {
 func TestClient(t *testing.T) {
 	checkTestSkip(t)
 	client = new(appserver.Client)
-	e := client.Connect(server.Address)
+	e := client.Connect(server.Address, serverSecret, "ariefdarmawan")
 	if e != nil {
 		t.Error(e.Error())
 		return

@@ -131,7 +131,8 @@ func (a *Server) Start(address string) error {
 		}
 		session = NewSession(referenceID)
 		a.sessions[referenceID] = session
-		result.SetBytes(session, MarshallingMethod())
+		//result.SetBytes(session, MarshallingMethod())
+		result.Data = session.Secret
 		return result
 	}, true, "")
 
