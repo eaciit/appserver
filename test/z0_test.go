@@ -77,7 +77,7 @@ func checkResult(result *toolkit.Result, t *testing.T) {
 func TestClient(t *testing.T) {
 	checkTestSkip(t)
 	client = new(appserver.Client)
-	e := client.Connect(server.Address, serverSecret, "ariefdarmawan")
+	e := client.Connect(server.Address, serverSecret, "ariefdarmawan_10")
 	if e != nil {
 		t.Error(e.Error())
 		return
