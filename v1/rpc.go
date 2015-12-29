@@ -9,7 +9,13 @@ import (
 
 //type RpcFn func(toolkit.M, *toolkit.Result) error
 type RpcFn func(toolkit.M) *toolkit.Result
-type RpcFns map[string]RpcFn
+type RpcFns map[string]RpcFnInfo
+
+type RpcFnInfo struct {
+	AuthRequired bool
+	AuthType     string
+	Fn           RpcFn
+}
 
 //type ReturnedBytes []byte
 
@@ -23,7 +29,7 @@ var _marshallingMethod string
 
 func MarshallingMethod() string {
 	if _marshallingMethod == "" {
-		_marshallingMethod = "json"
+		_marshallingMethod = "gob"
 	} else {
 		_marshallingMethod = strings.ToLower(_marshallingMethod)
 	}
@@ -36,7 +42,7 @@ func SetMarshallingMethod(m string) {
 
 func (r *Rpc) Do(in toolkit.M, out *toolkit.Result) error {
 	if r.Fns == nil {
-		r.Fns = map[string]RpcFn{}
+		r.Fns = map[string]RpcFnInfo{}
 	}
 
 	in.Set("rpc", r)
@@ -44,11 +50,19 @@ func (r *Rpc) Do(in toolkit.M, out *toolkit.Result) error {
 	if method == "" {
 		return errors.New("Method is empty")
 	}
-	fn, fnExist := r.Fns[method]
+	fninfo, fnExist := r.Fns[method]
 	if !fnExist {
 		return errors.New("Method " + method + " is not exist")
 	}
-	res := fn(in)
+	if fninfo.AuthRequired {
+		referenceID := strings.ToLower(in.GetString("auth_referenceid"))
+		secret := in.GetString("auth_secret")
+		valid := r.Server.validateSecret(fninfo.AuthType, referenceID, secret)
+		if !valid {
+			return errors.New("Unauthorised to call " + method)
+		}
+	}
+	res := fninfo.Fn(in)
 	if res.Status != toolkit.Status_OK {
 		return errors.New("RPC Call error: " + res.Message)
 	}
@@ -57,13 +71,17 @@ func (r *Rpc) Do(in toolkit.M, out *toolkit.Result) error {
 	return nil
 }
 
-func AddFntoRpc(r *Rpc, svr *Server, k string, fn RpcFn) {
+func AddFntoRpc(r *Rpc, svr *Server, k string, fn RpcFn, needValidation bool, authType string) {
 	//func (r *Rpc) AddFn(k string, fn RpcFn) {
 	if r.Server == nil {
 		r.Server = svr
 	}
 	if r.Fns == nil {
-		r.Fns = map[string]RpcFn{}
+		r.Fns = map[string]RpcFnInfo{}
 	}
-	r.Fns[k] = fn
+	r.Fns[k] = RpcFnInfo{
+		AuthRequired: needValidation,
+		AuthType:     authType,
+		Fn:           fn,
+	}
 }

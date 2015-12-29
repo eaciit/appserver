@@ -14,13 +14,19 @@ var serverInit bool
 type controller struct {
 }
 
+type Score struct {
+	Subject string
+	Value   int
+}
+
 func (a *controller) Hi(in toolkit.M) *toolkit.Result {
 	r := toolkit.NewResult()
 	name := in.GetString("Name")
 	r.SetBytes(struct {
 		HelloMessage string
 		TimeNow      time.Time
-	}{"Hello " + name, time.Now()}, "gob")
+		Scores       []Score
+	}{"Hello " + name, time.Now(), []Score{{"Bahasa Indonesia", 90}, {"Math", 85}}}, "gob")
 	return r
 }
 
@@ -50,6 +56,7 @@ func checkResult(result *toolkit.Result, t *testing.T) {
 			m := struct {
 				HelloMessage string
 				TimeNow      time.Time
+				Scores       []Score
 			}{}
 
 			//m := toolkit.M{}
@@ -58,7 +65,7 @@ func checkResult(result *toolkit.Result, t *testing.T) {
 				t.Errorf("Unable to decode result: %s\n", e.Error())
 				return
 			}
-			t.Logf("Result (decoded): %v", m)
+			t.Logf("Result (decoded): %s", toolkit.JsonString(m))
 		}
 	}
 }
