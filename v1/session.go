@@ -6,10 +6,11 @@ import (
 )
 
 type Session struct {
-	UserID   string
-	Secret   string
-	Created  time.Time
-	ExpireOn time.Time
+	SessionID   string
+	ReferenceID string
+	Secret      string
+	Created     time.Time
+	ExpireOn    time.Time
 }
 
 var _defaultSessionLifetime time.Duration
@@ -25,12 +26,13 @@ func SessionLifetime() time.Duration {
 	return _defaultSessionLifetime
 }
 
-func NewSession(userid string) *Session {
+func NewSession(referenceid string) *Session {
 	s := new(Session)
-	s.UserID = userid
+	s.SessionID = toolkit.RandomString(32)
+	s.ReferenceID = referenceid
 	s.Created = time.Now()
 	s.ExpireOn = s.Created.Add(SessionLifetime())
-	s.Secret = toolkit.GenerateRandomString("", 32)
+	s.Secret = toolkit.RandomString(32)
 	return s
 }
 

@@ -43,6 +43,7 @@ func TestStart(t *testing.T) {
 	server = new(appserver.Server)
 	server.Register(new(controller))
 	//server.SetSecret(serverSecret)
+	server.AllowMultiLogin = true
 	server.AddUser(&appserver.User{"ariefdarmawan", serverSecret})
 	e := server.Start("localhost:8000")
 	if e == nil {
@@ -96,10 +97,11 @@ func TestClientDouble(t *testing.T) {
 	e := client2.Connect(server.Address, serverSecret, "ariefdarmawan")
 	if e == nil {
 		client2.Close()
-		t.Error("Should not be able to connect multi")
+		t.Logf("Able to connect multi")
 		return
+	} else {
+		t.Error(e)
 	}
-	t.Log(e.Error())
 }
 
 func TestClientHi(t *testing.T) {

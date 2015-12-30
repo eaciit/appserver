@@ -33,6 +33,7 @@ type Server struct {
 	Address           string
 	Role              string
 	UseGlobalPassword bool
+	AllowMultiLogin   bool
 
 	rpcObject interface{}
 
@@ -77,8 +78,10 @@ func (a *Server) validateSecret(secretType string, referenceID string, secret st
 			return secret == user.Secret
 		}
 	} else if secretType == "session" {
+		//a.Log.Info(fmt.Sprintf("Session Validation: %s %s\n%s", referenceID, secret, toolkit.JsonString(a.sessions)))
 		session, exist := a.sessions[referenceID]
 		if !exist {
+			//a.Log.Warning("Session " + referenceID + " could not be found")
 			return false
 		}
 		return session.Secret == secret
@@ -137,14 +140,19 @@ func (a *Server) Start(address string) error {
 		if referenceID == "" {
 			return result.SetErrorTxt("Empty user provided")
 		}
-		session, exist := a.sessions[referenceID]
-		if exist && session.IsValid() {
-			return result.SetErrorTxt(referenceID + " already has active session on other connection")
+
+		//session, exist := a.sessions[referenceID]
+		var session *Session
+
+		for _, session = range a.sessions {
+			if session.ReferenceID == referenceID && session.IsValid() && !a.AllowMultiLogin {
+				return result.SetErrorTxt(referenceID + " already has active session on other connection")
+			}
 		}
 		session = NewSession(referenceID)
-		a.sessions[referenceID] = session
+		a.sessions[session.SessionID] = session
 		//result.SetBytes(session, MarshallingMethod())
-		result.Data = session.Secret
+		result.Data = toolkit.M{}.Set("referenceid", session.ReferenceID).Set("secret", session.Secret).ToBytes("gob")
 		return result
 	}, true, "")
 
@@ -168,7 +176,7 @@ func (a *Server) AddUser(user *User) {
 	if a.users == nil {
 		a.users = map[string]*User{}
 	}
-	a.users[user.UserID] = user
+	a.users[user.ReferenceID] = user
 }
 
 func (a *Server) AddFn(methodname string, fn RpcFn, needAuth bool, authType string) {

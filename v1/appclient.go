@@ -29,8 +29,9 @@ type Client struct {
 	UserID    string
 	LoginDate time.Time
 
-	client *rpc.Client
-	secret string
+	client      *rpc.Client
+	secret      string
+	referenceID string
 }
 
 func (a *Client) Connect(address string, secret string, userid string) error {
@@ -46,7 +47,9 @@ func (a *Client) Connect(address string, secret string, userid string) error {
 	if r.Status != toolkit.Status_OK {
 		return errors.New("Connect: " + r.Message)
 	}
-	a.secret = r.Data.(string)
+	m := toolkit.M{}
+	toolkit.FromBytes(r.Data.([]byte), "gob", &m)
+	a.secret = m.GetString("secret")
 	return nil
 }
 
