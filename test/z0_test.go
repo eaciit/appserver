@@ -29,7 +29,7 @@ func (a *controller) Hi(in toolkit.M) *toolkit.Result {
 		HelloMessage string
 		TimeNow      time.Time
 		Scores       []Score
-	}{"Hello " + name, time.Now(), []Score{{"Bahasa Indonesia", 90}, {"Math", 85}}}, "")
+	}{"Hello " + name, time.Now(), []Score{{"Bahasa Indonesia", 90}, {"Math", 85}}}, "gob")
 	return r
 }
 
@@ -41,10 +41,10 @@ func checkTestSkip(t *testing.T) {
 
 func TestStart(t *testing.T) {
 	server = new(appserver.Server)
-	server.Register(new(controller))
+	server.RegisterRPCFunctions(new(controller))
 	//server.SetSecret(serverSecret)
 	server.AllowMultiLogin = true
-	server.AddUser(&appserver.User{"ariefdarmawan", serverSecret})
+	server.AddUser("ariefdarmawan", serverSecret)
 	e := server.Start("localhost:8000")
 	if e == nil {
 		serverInit = true

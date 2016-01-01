@@ -2,9 +2,11 @@ package appserver
 
 import (
 	"errors"
+	//"fmt"
 	"github.com/eaciit/errorlib"
 	"github.com/eaciit/toolkit"
 	"net/rpc"
+
 	"time"
 )
 
@@ -29,9 +31,9 @@ type Client struct {
 	UserID    string
 	LoginDate time.Time
 
-	client      *rpc.Client
-	secret      string
-	referenceID string
+	client    *rpc.Client
+	secret    string
+	sessionID string
 }
 
 func (a *Client) Connect(address string, secret string, userid string) error {
@@ -49,6 +51,7 @@ func (a *Client) Connect(address string, secret string, userid string) error {
 	}
 	m := toolkit.M{}
 	toolkit.FromBytes(r.Data.([]byte), "gob", &m)
+	a.sessionID = m.GetString("referenceid")
 	a.secret = m.GetString("secret")
 	return nil
 }
@@ -69,7 +72,10 @@ func (a *Client) Call(methodName string, in toolkit.M) *toolkit.Result {
 	}
 	out := toolkit.NewResult()
 	in["method"] = methodName
-	in["auth_referenceid"] = a.UserID
+	if in.GetString("auth_referenceid") == "" {
+		in["auth_referenceid"] = a.sessionID
+	}
+	//fmt.Println("SessionID: " + a.sessionID)
 	if in.Has("auth_secret") == false {
 		in.Set("auth_secret", a.secret)
 	}

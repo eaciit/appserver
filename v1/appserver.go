@@ -67,8 +67,8 @@ func (a *Server) Secret() string {
 
 func (a *Server) validateSecret(secretType string, referenceID string, secret string) bool {
 	secretType = strings.ToLower(secretType)
-	referenceID = strings.ToLower(referenceID)
-	if secretType == "" {
+	//referenceID = referenceID
+	if secretType == "" || secretType == "self" {
 		user, userExist := a.users[referenceID]
 		if userExist == false {
 			return false
@@ -78,10 +78,17 @@ func (a *Server) validateSecret(secretType string, referenceID string, secret st
 			return secret == user.Secret
 		}
 	} else if secretType == "session" {
-		//a.Log.Info(fmt.Sprintf("Session Validation: %s %s\n%s", referenceID, secret, toolkit.JsonString(a.sessions)))
+		//a.Log.Info(fmt.Sprintf("Session Validation: ID=%s Secret=%s\n%s", referenceID, secret, toolkit.JsonString(a.sessions)))
 		session, exist := a.sessions[referenceID]
 		if !exist {
-			//a.Log.Warning("Session " + referenceID + " could not be found")
+			a.Log.Warning("Session " + referenceID + " could not be found")
+			return false
+		}
+		//if session.ReferenceID != referenceID {
+		//	return false
+		//}
+		if session.IsValid() == false {
+			//a.Log.Warning("Session "+referenceID+" is not valid")
 			return false
 		}
 		return session.Secret == secret
@@ -147,12 +154,14 @@ func (a *Server) Start(address string) error {
 		for _, session = range a.sessions {
 			if session.ReferenceID == referenceID && session.IsValid() && !a.AllowMultiLogin {
 				return result.SetErrorTxt(referenceID + " already has active session on other connection")
+			} else if session.ReferenceID == referenceID && !session.IsValid() && !a.AllowMultiLogin {
+				delete(a.sessions, session.SessionID)
 			}
 		}
-		session = NewSession(referenceID)
-		a.sessions[session.SessionID] = session
+		session = a.RegisterSession(referenceID)
+		//a.sessions[session.SessionID] = session
 		//result.SetBytes(session, MarshallingMethod())
-		result.Data = toolkit.M{}.Set("referenceid", session.ReferenceID).Set("secret", session.Secret).ToBytes("gob")
+		result.Data = toolkit.M{}.Set("referenceid", session.SessionID).Set("secret", session.Secret).ToBytes("gob")
 		return result
 	}, true, "")
 
@@ -172,7 +181,20 @@ func (a *Server) Start(address string) error {
 	return nil
 }
 
-func (a *Server) AddUser(user *User) {
+func (a *Server) RegisterSession(referenceID string) *Session {
+	s := NewSession(referenceID)
+	s.Secret = toolkit.RandomString(32)
+	s.SessionID = toolkit.RandomString(32)
+	s.ReferenceID = referenceID
+	a.sessions[s.SessionID] = s
+	a.Log.Info(fmt.Sprintf("Registering new session [%s] for %s", s.SessionID, s.ReferenceID))
+	return s
+}
+
+func (a *Server) AddUser(userid, password string) {
+	user := new(User)
+	user.ReferenceID = userid
+	user.Secret = password
 	if a.users == nil {
 		a.users = map[string]*User{}
 	}
@@ -191,7 +213,7 @@ func (a *Server) AddFn(methodname string, fn RpcFn, needAuth bool, authType stri
 	a.rpcObject = r
 }
 
-func (a *Server) Register(o interface{}) error {
+func (a *Server) RegisterRPCFunctions(o interface{}) error {
 	t := reflect.TypeOf(o)
 	v := reflect.ValueOf(o)
 	if v.Kind() != reflect.Ptr {

@@ -55,7 +55,7 @@ func (r *Rpc) Do(in toolkit.M, out *toolkit.Result) error {
 		return errors.New("Method " + method + " is not exist")
 	}
 	if fninfo.AuthRequired {
-		referenceID := strings.ToLower(in.GetString("auth_referenceid"))
+		referenceID := in.GetString("auth_referenceid")
 		secret := in.GetString("auth_secret")
 		valid := r.Server.validateSecret(fninfo.AuthType, referenceID, secret)
 		if !valid {
