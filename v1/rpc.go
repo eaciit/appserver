@@ -9,7 +9,7 @@ import (
 
 //type RpcFn func(toolkit.M, *toolkit.Result) error
 type RpcFn func(toolkit.M) *toolkit.Result
-type RpcFns map[string]RpcFnInfo
+type RpcFns map[string]*RpcFnInfo
 
 type RpcFnInfo struct {
 	AuthRequired bool
@@ -42,7 +42,7 @@ func SetMarshallingMethod(m string) {
 
 func (r *Rpc) Do(in toolkit.M, out *toolkit.Result) error {
 	if r.Fns == nil {
-		r.Fns = map[string]RpcFnInfo{}
+		r.Fns = map[string]*RpcFnInfo{}
 	}
 
 	in.Set("rpc", r)
@@ -77,9 +77,9 @@ func AddFntoRpc(r *Rpc, svr *Server, k string, fn RpcFn, needValidation bool, au
 		r.Server = svr
 	}
 	if r.Fns == nil {
-		r.Fns = map[string]RpcFnInfo{}
+		r.Fns = map[string]*RpcFnInfo{}
 	}
-	r.Fns[k] = RpcFnInfo{
+	r.Fns[k] = &RpcFnInfo{
 		AuthRequired: needValidation,
 		AuthType:     authType,
 		Fn:           fn,

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	//"github.com/eaciit/config"
-	"github.com/eaciit/errorlib"
+	//"github.com/eaciit/errorlib"
 	"github.com/eaciit/toolkit"
 	"net"
 	"net/rpc"
@@ -35,7 +35,7 @@ type Server struct {
 	UseGlobalPassword bool
 	AllowMultiLogin   bool
 
-	rpcObject interface{}
+	rpcObject *Rpc
 
 	Log      *toolkit.LogEngine
 	listener net.Listener
@@ -81,7 +81,7 @@ func (a *Server) validateSecret(secretType string, referenceID string, secret st
 		//a.Log.Info(fmt.Sprintf("Session Validation: ID=%s Secret=%s\n%s", referenceID, secret, toolkit.JsonString(a.sessions)))
 		session, exist := a.sessions[referenceID]
 		if !exist {
-			a.Log.Warning("Session " + referenceID + " could not be found")
+			a.Log.Warning("Session " + referenceID + " could not be found on " + a.Address)
 			return false
 		}
 		//if session.ReferenceID != referenceID {
@@ -97,8 +97,18 @@ func (a *Server) validateSecret(secretType string, referenceID string, secret st
 }
 
 func (a *Server) Start(address string) error {
+	if a.Log == nil {
+		le, e := toolkit.NewLog(true, false, "", "", "")
+		if e == nil {
+			a.Log = le
+		} else {
+			return errors.New("Unable to setup log")
+		}
+	}
+
 	if a.rpcObject == nil {
-		return errorlib.Error(packageName, objServer, "Start", "RPC Object is not yet properly initialized")
+		//return errorlib.Error(packageName, objServer, "Start", "RPC Object is not yet properly initialized")
+		a.rpcObject = new(Rpc)
 	}
 	/*
 		if reloadConfig {
@@ -116,15 +126,6 @@ func (a *Server) Start(address string) error {
 		*/
 		if a.Address == "" {
 			return errors.New("RPC Server address is empty")
-		}
-	}
-
-	if a.Log == nil {
-		le, e := toolkit.NewLog(true, false, "", "", "")
-		if e == nil {
-			a.Log = le
-		} else {
-			return errors.New("Unable to setup log")
 		}
 	}
 
@@ -206,11 +207,23 @@ func (a *Server) AddFn(methodname string, fn RpcFn, needAuth bool, authType stri
 	if a.rpcObject == nil {
 		r = new(Rpc)
 	} else {
-		r = a.rpcObject.(*Rpc)
+		r = a.rpcObject
 	}
 
 	AddFntoRpc(r, a, methodname, fn, needAuth, authType)
 	a.rpcObject = r
+}
+
+func (a *Server) Fn(fnName string) *RpcFnInfo {
+	if a.rpcObject == nil {
+		return nil
+	}
+	fnName = strings.ToLower(fnName)
+	fn, exist := a.rpcObject.Fns[fnName]
+	if !exist {
+		return nil
+	}
+	return fn
 }
 
 func (a *Server) RegisterRPCFunctions(o interface{}) error {
@@ -219,15 +232,18 @@ func (a *Server) RegisterRPCFunctions(o interface{}) error {
 	if v.Kind() != reflect.Ptr {
 		return errors.New("Invalid object for RPC Register")
 	}
+	objName := toolkit.TypeName(o)
 	methodCount := t.NumMethod()
 	for i := 0; i < methodCount; i++ {
 		method := t.Method(i)
 		mtype := method.Type
 		methodName := strings.ToLower(method.Name)
+		//fmt.Println("Evaluating " + toolkit.TypeName(o) + "." + methodName)
 
 		//-- now check method signature
 		if mtype.NumIn() == 2 && mtype.In(1).String() == "toolkit.M" {
 			if mtype.NumOut() == 1 && mtype.Out(0).String() == "*toolkit.Result" {
+				fmt.Println("Registering RPC Function " + objName + "." + methodName)
 				a.AddFn(methodName, v.Method(i).Interface().(func(toolkit.M) *toolkit.Result), true, "session")
 			}
 		}

@@ -40,14 +40,14 @@ func (a *Client) Connect(address string, secret string, userid string) error {
 	a.UserID = userid
 	client, e := rpc.Dial("tcp", address)
 	if e != nil {
-		return errorlib.Error(packageName, objClient, "Connect", "Unable to connect: "+e.Error())
+		return errorlib.Error(packageName, objClient, "Connect", "["+address+"] Unable to connect: "+e.Error())
 	}
 	a.client = client
 	a.LoginDate = time.Now().UTC()
 
 	r := a.Call("addsession", toolkit.M{}.Set("auth_secret", secret).Set("auth_referenceid", a.UserID))
 	if r.Status != toolkit.Status_OK {
-		return errors.New("Connect: " + r.Message)
+		return errors.New("[" + address + "] Connect: " + r.Message + " User:" + a.UserID)
 	}
 	m := toolkit.M{}
 	toolkit.FromBytes(r.Data.([]byte), "gob", &m)
