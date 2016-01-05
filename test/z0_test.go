@@ -141,6 +141,9 @@ func Test2Server(t *testing.T) {
 	if r.Data.(string) != "Hi from server 2" {
 		t.Errorf("Fail, got " + r.Data.(string))
 	}
+
+	client2.Close()
+	server2.Stop()
 }
 
 func TestStop(t *testing.T) {
