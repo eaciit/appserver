@@ -38,7 +38,7 @@ type Client struct {
 }
 
 func (a *Client) Connect(address string, secret string, userid string) error {
-	toolkit.Printf("Connecting to %s@%s \n", userid, address)
+	//("Connecting to %s@%s \n", userid, address)
 	a.UserID = userid
 	client, e := rpc.Dial("tcp", address)
 	if e != nil {

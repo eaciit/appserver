@@ -80,7 +80,7 @@ func (r *Rpc) Do(in toolkit.M, out *toolkit.Result) error {
 func AddFntoRpc(r *Rpc, svr *Server, k string, fn RpcFn, needValidation bool, authType string) {
 	//func (r *Rpc) AddFn(k string, fn RpcFn) {
 	//if r.Server == nil {
-	toolkit.Println("Adding method " + k + " to server " + svr.Address)
+	svr.Log.Info("Register " + svr.Address + "/" + k)
 	r.Server = svr
 	//}
 	if r.Fns == nil {

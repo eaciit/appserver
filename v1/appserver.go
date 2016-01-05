@@ -158,6 +158,7 @@ func (a *Server) Start(address string) error {
 		//a.sessions[session.SessionID] = session
 		//result.SetBytes(session, MarshallingMethod())
 		result.Data = toolkit.M{}.Set("referenceid", session.SessionID).Set("secret", session.Secret).ToBytes("gob")
+		a.Log.Info(a.Address + " has new session " + referenceID + " : " + session.SessionID)
 		return result
 	}, true, "")
 
@@ -168,7 +169,7 @@ func (a *Server) Start(address string) error {
 		return result
 	}, true, "session")
 
-	toolkit.Println("Starting server " + a.Address + ". Registered functions are: " + strings.Join(func() []string {
+	a.Log.Info("Starting server " + a.Address + ". Registered functions are: " + strings.Join(func() []string {
 		ret := []string{}
 		for k, _ := range a.rpcObject.Fns {
 			ret = append(ret, k)
@@ -259,7 +260,10 @@ func (a *Server) RegisterRPCFunctions(o interface{}) error {
 	if v.Kind() != reflect.Ptr {
 		return errors.New("Invalid object for RPC Register")
 	}
-	objName := toolkit.TypeName(o)
+	if a.Log == nil {
+		a.Log, _ = toolkit.NewLog(true, false, "", "", "")
+	}
+	//objName := toolkit.TypeName(o)
 	methodCount := t.NumMethod()
 	for i := 0; i < methodCount; i++ {
 		method := t.Method(i)
@@ -270,7 +274,7 @@ func (a *Server) RegisterRPCFunctions(o interface{}) error {
 		//-- now check method signature
 		if mtype.NumIn() == 2 && mtype.In(1).String() == "toolkit.M" {
 			if mtype.NumOut() == 1 && mtype.Out(0).String() == "*toolkit.Result" {
-				fmt.Println("Registering RPC Function " + objName + "." + methodName)
+				//a.Log.Info("Registering RPC Function " + objName + "." + methodName)
 				a.AddFn(methodName, v.Method(i).Interface().(func(toolkit.M) *toolkit.Result), true, "session")
 			}
 		}
