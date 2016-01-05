@@ -45,9 +45,11 @@ func TestStart(t *testing.T) {
 	//server.SetSecret(serverSecret)
 	server.AllowMultiLogin = true
 	server.AddUser("ariefdarmawan", serverSecret)
-	e := server.Start("localhost:8000")
+	e := server.Start("localhost:8001")
 	if e == nil {
 		serverInit = true
+	} else {
+		t.Errorf("Fail to start server: %s", e.Error())
 	}
 }
 
@@ -108,6 +110,37 @@ func TestClientHi(t *testing.T) {
 	checkTestSkip(t)
 	r := client.Call("hi", toolkit.M{}.Set("name", "Arief Darmawan"))
 	checkResult(r, t)
+}
+
+type Server2RPC struct {
+}
+
+func (s *Server2RPC) Hi2(in toolkit.M) *toolkit.Result {
+	return toolkit.NewResult().SetData("Hi from server 2")
+}
+
+func Test2Server(t *testing.T) {
+	server2 := new(appserver.Server)
+	server2.RegisterRPCFunctions(new(Server2RPC))
+	server2.AddUser("admin", "admin")
+	e := server2.Start("localhost:8888")
+	if e != nil {
+		t.Error("Unable to start server: " + e.Error())
+		return
+	}
+
+	client2 := new(appserver.Client)
+	client2.Connect(server2.Address, "admin", "admin")
+	r := client2.Call("hi2", nil)
+
+	if r.Status == toolkit.Status_NOK {
+		t.Errorf("Call fail : %s", r.Message)
+		return
+	}
+
+	if r.Data.(string) != "Hi from server 2" {
+		t.Errorf("Fail, got " + r.Data.(string))
+	}
 }
 
 func TestStop(t *testing.T) {

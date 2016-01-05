@@ -32,11 +32,13 @@ type Client struct {
 	LoginDate time.Time
 
 	client    *rpc.Client
+	address   string
 	secret    string
 	sessionID string
 }
 
 func (a *Client) Connect(address string, secret string, userid string) error {
+	toolkit.Printf("Connecting to %s@%s \n", userid, address)
 	a.UserID = userid
 	client, e := rpc.Dial("tcp", address)
 	if e != nil {
@@ -51,6 +53,7 @@ func (a *Client) Connect(address string, secret string, userid string) error {
 	}
 	m := toolkit.M{}
 	toolkit.FromBytes(r.Data.([]byte), "gob", &m)
+	a.address = address
 	a.sessionID = m.GetString("referenceid")
 	a.secret = m.GetString("secret")
 	return nil
@@ -82,7 +85,7 @@ func (a *Client) Call(methodName string, in toolkit.M) *toolkit.Result {
 	e := a.client.Call("Rpc.Do", in, out)
 	//_ = "breakpoint"
 	if e != nil {
-		return out.SetError(e)
+		return out.SetErrorTxt(a.address + "." + methodName + " Fail: " + e.Error())
 	}
 	return out
 }

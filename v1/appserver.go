@@ -37,8 +37,9 @@ type Server struct {
 
 	rpcObject *Rpc
 
-	Log      *toolkit.LogEngine
-	listener net.Listener
+	Log       *toolkit.LogEngine
+	rpcServer *rpc.Server
+	listener  net.Listener
 
 	container interface{}
 	users     map[string]*User
@@ -129,12 +130,6 @@ func (a *Server) Start(address string) error {
 		}
 	}
 
-	rpc.Register(a.rpcObject)
-	l, e := net.Listen("tcp", fmt.Sprintf("%s", a.Address))
-	if e != nil {
-		return e
-	}
-
 	//init a ping method. Ping method will return "EACIIT RPC Application Server"
 	a.AddFn("ping", func(in toolkit.M) *toolkit.Result {
 		result := toolkit.NewResult()
@@ -173,11 +168,34 @@ func (a *Server) Start(address string) error {
 		return result
 	}, true, "session")
 
-	//a.users = map[string]*User
+	toolkit.Println("Starting server " + a.Address + ". Registered functions are: " + strings.Join(func() []string {
+		ret := []string{}
+		for k, _ := range a.rpcObject.Fns {
+			ret = append(ret, k)
+		}
+		return ret
+	}(), ", "))
+
+	a.rpcServer = rpc.NewServer()
+	a.rpcServer.Register(a.rpcObject)
+	l, e := net.Listen("tcp", fmt.Sprintf("%s", a.Address))
+	if e != nil {
+		return e
+	}
+
 	a.sessions = map[string]*Session{}
 	a.listener = l
 	go func() {
-		rpc.Accept(l)
+		a.rpcServer.Accept(l)
+		//rpc.Accept(l)
+		/*
+			listenerConnection, err := l.Accept()
+			if err != nil {
+				a.Log.Error("Unable to setup RPC Listener Connection " + err.Error())
+				return
+			}
+			go a.rpcServer.ServeConn(listenerConnection)
+		*/
 	}()
 	return nil
 }
@@ -188,7 +206,7 @@ func (a *Server) RegisterSession(referenceID string) *Session {
 	s.SessionID = toolkit.RandomString(32)
 	s.ReferenceID = referenceID
 	a.sessions[s.SessionID] = s
-	a.Log.Info(fmt.Sprintf("Registering new session [%s] for %s", s.SessionID, s.ReferenceID))
+	//a.Log.Info(fmt.Sprintf("Registering new session [%s] for %s", s.SessionID, s.ReferenceID))
 	return s
 }
 
@@ -205,6 +223,7 @@ func (a *Server) AddUser(userid, password string) {
 func (a *Server) AddFn(methodname string, fn RpcFn, needAuth bool, authType string) {
 	var r *Rpc
 	if a.rpcObject == nil {
+		//toolkit.Println("Initiliazed new RPC object for " + a.Address)
 		r = new(Rpc)
 	} else {
 		r = a.rpcObject
@@ -212,6 +231,14 @@ func (a *Server) AddFn(methodname string, fn RpcFn, needAuth bool, authType stri
 
 	AddFntoRpc(r, a, methodname, fn, needAuth, authType)
 	a.rpcObject = r
+}
+
+func (a *Server) Functions() RpcFns {
+	if a.rpcObject == nil {
+		return RpcFns{}
+	}
+
+	return a.rpcObject.Fns
 }
 
 func (a *Server) Fn(fnName string) *RpcFnInfo {
@@ -260,6 +287,6 @@ func (a *Server) Serve() error {
 
 func (a *Server) Stop() error {
 	a.listener.Close()
-	a.Log.Info("Stopping service")
+	a.Log.Info(a.Address + " Stopping service")
 	return nil
 }
