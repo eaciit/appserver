@@ -1,10 +1,11 @@
 package rpctest
 
 import (
-	"github.com/eaciit/appserver/v1"
-	"github.com/eaciit/toolkit"
 	"testing"
 	"time"
+
+	"github.com/eaciit/appserver/v1"
+	"github.com/eaciit/toolkit"
 )
 
 var server *appserver.Server
@@ -115,8 +116,8 @@ func TestClientHi(t *testing.T) {
 type Server2RPC struct {
 }
 
-func (s *Server2RPC) Hi2(in toolkit.M) *toolkit.Result {
-	return toolkit.NewResult().SetData("Hi from server 2")
+func (s *Server2RPC) Hi20a(in toolkit.M) *toolkit.Result {
+	return toolkit.NewResult().SetData("Hi from server 2 - Arief")
 }
 
 func Test2Server(t *testing.T) {
@@ -131,15 +132,17 @@ func Test2Server(t *testing.T) {
 
 	client2 := new(appserver.Client)
 	client2.Connect(server2.Address, "admin", "admin")
-	r := client2.Call("hi2", nil)
+	r := client2.Call("hi20a", nil)
 
 	if r.Status == toolkit.Status_NOK {
 		t.Errorf("Call fail : %s", r.Message)
 		return
 	}
 
-	if r.Data.(string) != "Hi from server 2" {
+	if r.Data.(string) != "Hi from server 2 - Arief" {
 		t.Errorf("Fail, got " + r.Data.(string))
+	} else {
+		t.Logf("Data: " + r.Data.(string))
 	}
 
 	client2.Close()

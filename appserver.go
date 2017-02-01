@@ -5,11 +5,12 @@ import (
 	"fmt"
 	//"github.com/eaciit/config"
 	//"github.com/eaciit/errorlib"
-	"github.com/eaciit/toolkit"
 	"net"
 	"net/rpc"
 	"reflect"
 	"strings"
+
+	"github.com/eaciit/toolkit"
 )
 
 const (
@@ -133,7 +134,7 @@ func (a *Server) Start(address string) error {
 	//init a ping method. Ping method will return "EACIIT RPC Application Server"
 	a.AddFn("ping", func(in toolkit.M) *toolkit.Result {
 		result := toolkit.NewResult()
-		result.Data = "EACIIT RPC Application Server"
+		//result.Data = "EACIIT RPC Application Server"
 		return result
 	}, false, "")
 

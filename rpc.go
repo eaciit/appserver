@@ -53,15 +53,6 @@ func (r *Rpc) Do(in toolkit.M, out *toolkit.Result) error {
 	fninfo, fnExist := r.Fns[method]
 	if !fnExist {
 		return errors.New("Method " + method + " is not exist")
-		/*
-			" Available methodnames on " + r.Server.Address + "  are: " + strings.Join(func() []string {
-				ret := []string{}
-				for name, _ := range r.Fns {
-					ret = append(ret, name)
-				}
-				return ret
-			}(), ", "))
-		*/
 	}
 	if fninfo.AuthRequired {
 		referenceID := in.GetString("auth_referenceid")
